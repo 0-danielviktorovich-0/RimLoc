@@ -50,6 +50,14 @@
 
 Покрытие мандата: rustfmt/clippy/tests — `ci.lint/test`; React typecheck/build — `ci.frontend-react`; frozen Svelte regression — `ci.frontend`; dependency/security audit — `ci.deny` + PR-diff `dependency-review.yml`; coverage — отдельный `coverage.yml` (Rust workspace + Tauri Rust, Codecov-native region-aware reports, Components/Flags, OIDC); actionlint — `ci.workflows-lint`; CodeQL — default setup репозитория с path-конфигом; mkdocs — strict `docs.build`.
 
+### Кроссплатформенный bundle-smoke (`ci.bundle-windows` / `ci.bundle-linux`, issue #164)
+
+Staged-бандлы собираются tauri-cli на реальных runner'ах (NSIS на windows-latest; deb+AppImage на ubuntu-24.04 с `libwebkit2gtk-4.1-dev`), затем собранное приложение запускается: Windows — raw `rimloc-gui.exe` (WebView2 предустановлен на runner'е; `bundle/nsis` содержит только `*-setup.exe`), Linux — AppImage c `--appimage-extract-and-run` под прямым `Xvfb` (без xvfb-run-обёртки, чтобы `wait` видел статус выхода самого приложения; graceful = 0 или 143, любой другой код — красный смоук).
+
+**Что smoke доказывает** (критерии #164): процесс жив ≥15 с; логи старта без crash-маркеров (panic / недостающие shared-библиотеки / потеря дисплея); аккуратный выход — WM_CLOSE на Windows и SIGTERM на Linux с 10-секундным grace-периодом и exit-code-проверкой; sha256 бандлов зафиксирован (`sha256-windows.txt` / `sha256-linux.txt`, дублируется в лог job'а). Логи старта и чексуммы выгружаются артефактами `rimloc-*-smoke-evidence` — с `if: always()`, то есть приложены даже при красном smoke.
+
+**Честные границы покрытия** (не доказывается): полноценная приёмка платформ (Owner UAT в UTM/VM — отдельный контур цикла); инсталляторный поток NSIS (smoke запускает raw exe из сборки, не установленный продукт); локальный Docker-прогон Linux-сборки; рендеринг окна не проверяется визуально — только живость процесса и чистота логов.
+
 ## 5. Правила безопасности, общие для всех workflow
 
 1. **Пин сторонних actions на полные SHA.** Комментарий рядом с SHA — какой тег/ветка был запинен и когда. Пины сняты с той же ревизии, на которую резолвились старые `@vX`-ссылки — поведение не изменилось.

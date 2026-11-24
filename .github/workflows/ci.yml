@@ -287,22 +287,85 @@ jobs:
         shell: bash
         run: npx --yes @tauri-apps/cli@2 build --bundles nsis
         working-directory: gui/tauri-app/src-tauri
+      # Issue #164: pin the exact bytes behind the smoke run — the NSIS
+      # installer (the shipped artifact) plus the raw rimloc-gui.exe it
+      # launches (bundle/nsis holds only the *-setup.exe).
+      - name: Windows artifact checksums (sha256)
+        shell: powershell
+        run: |
+          $targets = @(Get-ChildItem "target\release\bundle\nsis\*.exe")
+          $raw = Get-ChildItem "target\release\*.exe" | Select-Object -First 1
+          if ($raw) { $targets += $raw }
+          if (-not $targets) { Write-Host "CHECKSUM_FAIL: no exe artifacts found"; exit 1 }
+          $lines = foreach ($f in $targets) {
+            "{0}  {1}" -f (Get-FileHash -Algorithm SHA256 $f.FullName).Hash.ToLower(), $f.Name
+          }
+          $lines | Set-Content "target\release\bundle\sha256-windows.txt"
+          $lines | ForEach-Object { Write-Host "SHA256  $_" }
+      # Startup smoke per #164: start → alive 15s → clean logs → graceful close.
+      # WebView2 runtime is preinstalled on windows runners. The release build
+      # is a GUI-subsystem binary, so an EMPTY log is a clean log — anything
+      # that does appear must be free of crash markers.
       - name: Windows startup smoke
         shell: powershell
         run: |
           $exe = Get-ChildItem "target\release\bundle\nsis\*.exe" | Where-Object { $_.Name -notmatch "setup" } | Select-Object -First 1
           if (-not $exe) { $exe = Get-ChildItem "target\release\*.exe" | Select-Object -First 1 }
           if (-not $exe) { Write-Host "STARTUP_FAIL: no runnable exe found after build"; exit 1 }
-          $env:RIMLOC_DATA_DIR = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath() + "rimloc-smoke-" + [Guid]::NewGuid().ToString("N").Substring(0,8)) -Force
-          $proc = Start-Process -FilePath $exe.FullName -PassThru -NoNewWindow
+          Write-Host "STARTUP_INFO: smoking $($exe.FullName)"
+          $bundle = "target\release\bundle"
+          $outLog = "$bundle\smoke-windows-stdout.log"
+          $errLog = "$bundle\smoke-windows-stderr.log"
+          $env:RIMLOC_DATA_DIR = (New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath() + "rimloc-smoke-" + [Guid]::NewGuid().ToString("N").Substring(0,8)) -Force).FullName
+          $proc = Start-Process -FilePath $exe.FullName -PassThru -NoNewWindow -RedirectStandardOutput $outLog -RedirectStandardError $errLog
           Start-Sleep -Seconds 15
           if ($proc.HasExited) {
-            Write-Host "STARTUP_FAIL: app exited within 15s (code $($proc.ExitCode))"
+            # Parameterless WaitForExit guarantees ExitCode is populated
+            # (PS 5.1 quirk: the timed overload may leave it null).
+            $proc.WaitForExit()
+            $earlyCode = $proc.ExitCode
+            Write-Host "STARTUP_FAIL: app exited within 15s (exit code $(if ($null -ne $earlyCode) { $earlyCode } else { 'unavailable' }))"
+            Get-Content $outLog, $errLog -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "LOG: $_" }
             exit 1
-          } else {
-            Write-Host "STARTUP_PASS: app alive after 15s"
-            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
           }
+          Write-Host "STARTUP_PASS: app alive after 15s"
+          $crash = Select-String -Path $outLog, $errLog -Pattern "panicked at|RUST_BACKTRACE|error while loading|WebView2 initialization failed"
+          if ($crash) {
+            Write-Host "STARTUP_FAIL: crash markers in smoke logs:"
+            $crash | ForEach-Object { Write-Host "LOG: $($_.Line)" }
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            exit 1
+          }
+          Write-Host "STARTUP_PASS: smoke logs clean"
+          # Graceful close: WM_CLOSE to the main window; force-kill only on failure.
+          $null = $proc.CloseMainWindow()
+          if (-not $proc.WaitForExit(10000)) {
+            Write-Host "STARTUP_FAIL: app ignored the window close for 10s (not a graceful exit)"
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            exit 1
+          }
+          $proc.WaitForExit()
+          $exitCode = $proc.ExitCode
+          if ($null -ne $exitCode -and $exitCode -ne 0) {
+            Write-Host "STARTUP_FAIL: non-zero exit code $exitCode on graceful close"
+            exit 1
+          }
+          if ($null -ne $exitCode) {
+            Write-Host "STARTUP_PASS: graceful close, exit code $exitCode"
+          } else {
+            Write-Host "STARTUP_PASS: graceful close (exit code not reported by the runner)"
+          }
+      # Issue #164: evidence logs ship as artifacts even when the smoke is red.
+      - name: Upload smoke evidence (logs + checksums)
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
+        with:
+          name: rimloc-windows-smoke-evidence
+          path: |
+            target/release/bundle/smoke-windows-*.log
+            target/release/bundle/sha256-windows.txt
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
         with:
@@ -338,28 +401,85 @@ jobs:
         run: |
           npx --yes @tauri-apps/cli@2 build --bundles deb,appimage
         working-directory: gui/tauri-app/src-tauri
+      # Issue #164: pin the exact bytes behind the smoke run (deb + AppImage).
+      - name: Linux artifact checksums (sha256)
+        run: |
+          cd target/release/bundle
+          {
+            sha256sum deb/*.deb
+            sha256sum appimage/*.AppImage
+          } | tee sha256-linux.txt
+      # Startup smoke per #164: start under Xvfb → alive 15s → clean logs →
+      # graceful SIGTERM exit. Run output is captured to smoke-linux.log and
+      # shipped as evidence even when the smoke is red.
       - name: Linux startup smoke (virtual display)
         run: |
           sudo apt-get install -y xvfb
           APPIMAGE=$(find target/release/bundle/appimage -name "*.AppImage" | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "STARTUP_FAIL: no AppImage found after build"
+            exit 1
+          fi
           chmod +x "$APPIMAGE"
           RIMLOC_DATA_DIR=$(mktemp -d)
           export RIMLOC_DATA_DIR
-          xvfb-run -a "$APPIMAGE" &
-          WRAPPER_PID=$!
+          LOG=target/release/bundle/smoke-linux.log
+          # Run Xvfb directly (no xvfb-run wrapper) so $! IS the app PID and
+          # `wait` can capture its true termination status. AppImages run with
+          # --appimage-extract-and-run: no FUSE needed and AppRun exec()s the
+          # binary in the same PID. A crash after SIGTERM (e.g. exit 42) must
+          # NOT count as graceful — only 0 (clean exit) or 143 (our SIGTERM).
+          Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          sleep 2
+          "$APPIMAGE" --appimage-extract-and-run >"$LOG" 2>&1 &
+          APP_PID=$!
           sleep 15
-          APP_PID=$(pgrep -f "rimloc|AppRun" | grep -v "$WRAPPER_PID" | grep -v xvfb | head -1)
-          if [ -n "$APP_PID" ] && kill -0 "$APP_PID" 2>/dev/null; then
-            echo "STARTUP_PASS: GUI process $APP_PID alive after 15s on virtual display"
-            kill "$APP_PID" "$WRAPPER_PID" 2>/dev/null || true
-          elif kill -0 "$WRAPPER_PID" 2>/dev/null; then
-            echo "STARTUP_FAIL: wrapper alive but no GUI process found"
-            kill "$WRAPPER_PID" 2>/dev/null || true
-            exit 1
+          if kill -0 "$APP_PID" 2>/dev/null; then
+            echo "STARTUP_PASS: GUI process alive after 15s on virtual display (pid $APP_PID)"
+            kill -TERM "$APP_PID" 2>/dev/null || true
+            APP_RC=""
+            for _ in $(seq 1 10); do
+              if ! kill -0 "$APP_PID" 2>/dev/null; then break; fi
+              sleep 1
+            done
+            # Capture the true termination status: `wait` under `set -e` needs
+            # the guarded pattern, but the guard must not mask the status.
+            wait "$APP_PID" && APP_RC=$? || APP_RC=$?
+            if [ "$APP_RC" -eq 0 ] || [ "$APP_RC" -eq 143 ]; then
+              echo "STARTUP_PASS: app exited gracefully on SIGTERM (wait status $APP_RC)"
+            else
+              echo "STARTUP_FAIL: app terminated with unexpected exit status $APP_RC (crash or nonzero exit on SIGTERM)"
+              kill -9 "$XVFB_PID" 2>/dev/null || true
+              exit 1
+            fi
+            # Clean logs: startup must not panic / lose shared libraries / the display.
+            if grep -Eq "panicked at|RUST_BACKTRACE|error while loading shared libraries|cannot open display" "$LOG"; then
+              echo "STARTUP_FAIL: crash markers in app log:"
+              cat "$LOG"
+              exit 1
+            fi
+            echo "STARTUP_PASS: app log clean:"
+            cat "$LOG"
           else
-            echo "STARTUP_FAIL: both wrapper and GUI exited"
+            echo "STARTUP_FAIL: app exited before the 15s alive check"
+            cat "$LOG" || true
+            kill -9 "$XVFB_PID" 2>/dev/null || true
             exit 1
           fi
+          kill -9 "$XVFB_PID" 2>/dev/null || true
+      # Issue #164: evidence logs ship as artifacts even when the smoke is red.
+      - name: Upload smoke evidence (logs + checksums)
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
+        with:
+          name: rimloc-linux-smoke-evidence
+          path: |
+            target/release/bundle/smoke-linux.log
+            target/release/bundle/sha256-linux.txt
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
         with:
