@@ -458,3 +458,21 @@ button:disabled { cursor: default; opacity: 1; filter: saturate(.5) brightness(.
    needs a usable default editing height. --- */
 .ws-center > .entries-pane { flex: 1; min-width: 0; }
 .detail-body textarea { min-height: 176px; }
+
+/* --- T6 #161 (narrow window 980×640): sidebar overflow. The sidebar is a
+   fixed full-height flex column; at the minimum window its natural content
+   (~822px) overflows the 608px content area with overflow:visible — the
+   sidebar-bottom block (Settings/About links) fell past the window edge
+   with no scroll affordance and was unreachable. Make the sidebar scroll
+   instead (same pattern as .entry-list). Auto margins inside the flex
+   column clamp to 0 on overflow per css-flexbox §8.1, so no content is
+   lost at the scroll origin. --- */
+.app-sidebar { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+/* --- T6 #161 (narrow window 980×640): workspace page overflow. The
+   workspace route wraps in an UNSTYLED .ws-page; the editor grid floors at
+   minmax(530px, …) so at the 489px visible box the page (~1105px) outgrew
+   it and route-content's overflow:hidden made the ws-footer («На главную»)
+   unreachable — no scroll container existed anywhere on the chain. Let the
+   workspace page scroll like .page-content does. --- */
+.ws-page { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
