@@ -35,6 +35,23 @@ else
   note "ok: resources clean of guest-JS markers"
 fi
 
+# 1.5) bundle-level code signature (macOS): a shipped .app must carry
+# _CodeSignature/CodeResources and pass strict validation. A bare
+# linker-signed main binary is NOT a bundle signature: Gatekeeper treats a
+# quarantined bundle without CodeResources as damaged (REA release-exposure
+# finding 2026-11-20: every staged RC .app shipped without it).
+if [ "$(uname -s)" = "Darwin" ]; then
+  if [ ! -f "$APP/Contents/_CodeSignature/CodeResources" ]; then
+    die "bundle signature missing: Contents/_CodeSignature/CodeResources absent (fix: codesign --force --sign - \"$APP\")"
+  elif ! codesign -v --strict "$APP" 2>/dev/null; then
+    die "bundle signature invalid: codesign -v --strict failed (fix: codesign --force --sign - \"$APP\")"
+  else
+    note "ok: bundle signature present and strict-valid"
+  fi
+else
+  note "skip: bundle signature check is macOS-only (host $(uname -s))"
+fi
+
 # 3) runtime negative test: env must NOT open the bridge.
 # Port must be DEDICATED (TAURI_WEBDRIVER_PORT) — machine port 4445 may be
 # held by unrelated services (BookKeeper hub held it once → false FAIL).
