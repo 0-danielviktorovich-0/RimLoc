@@ -23,12 +23,31 @@ import { fileURLToPath } from 'node:url'
 // Specs load as ESM — no __dirname here.
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const REPO = path.resolve(HERE, '..', '..', '..', '..', '..')
-const EVIDENCE = process.env.T6_EVIDENCE || '/tmp/rimloc-t6/evidence'
-const PIDFILE = process.env.T6_PIDFILE || '/tmp/rimloc-t6/app.pid'
-const PY = process.env.T6_PY || '/tmp/rimloc-t6-venv/bin/python3'
-const SHOT = process.env.T6_SHOT_PY || path.join(REPO, 'testlab/ui_automation/bin/shot-window.py')
-const WINFRAME = process.env.T6_WINFRAME_PY || path.join(REPO, 'testlab/ui_automation/bin/winframe.py')
-const MOD = process.env.T6_MOD || '/tmp/rimloc-t6/mod'
+
+// Every external input (lane env vars, the published pidfile) passes this
+// shape check before it reaches a child process or a file path: the lane
+// runs on a trusted machine, but the boundary stays validated — no shell is
+// ever spawned (execFileSync with an argv array), and the shape guard keeps
+// injected env/pidfile content out of the helper calls.
+const SAFE_PATH = /^[A-Za-z0-9_\-/.:@+ ]{1,600}$/
+
+function safePath(kind: string, raw: string): string {
+  if (!SAFE_PATH.test(raw) || raw.includes('..')) {
+    throw new Error(`unsafe ${kind} rejected by the lane: ${JSON.stringify(raw.slice(0, 64))}`)
+  }
+  return raw
+}
+
+function envPath(kind: string, name: string, fallback: string): string {
+  return safePath(kind, process.env[name] || fallback)
+}
+
+const EVIDENCE = envPath('evidence dir', 'T6_EVIDENCE', '/tmp/rimloc-t6/evidence')
+const PIDFILE = envPath('pidfile', 'T6_PIDFILE', '/tmp/rimloc-t6/app.pid')
+const PY = envPath('python', 'T6_PY', '/tmp/rimloc-t6-venv/bin/python3')
+const SHOT = envPath('shot helper', 'T6_SHOT_PY', path.join(REPO, 'testlab/ui_automation/bin/shot-window.py'))
+const WINFRAME = envPath('winframe helper', 'T6_WINFRAME_PY', path.join(REPO, 'testlab/ui_automation/bin/winframe.py'))
+const MOD = envPath('fixture mod dir', 'T6_MOD', '/tmp/rimloc-t6/mod')
 const EXPECT_W = 980
 const EXPECT_H = 640
 
@@ -77,7 +96,9 @@ async function webShot(name: string): Promise<void> {
 /** The app pid published by spawn-wrapper-t6.sh (0 when unreadable). */
 function appPid(): number {
   try {
-    return parseInt(readFileSync(PIDFILE, 'utf8').trim(), 10)
+    const raw = readFileSync(PIDFILE, 'utf8').trim()
+    if (!/^\d{1,7}$/.test(raw)) return 0
+    return parseInt(raw, 10)
   } catch {
     return 0
   }
