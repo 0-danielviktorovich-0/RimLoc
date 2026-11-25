@@ -99,3 +99,17 @@ dark theme/checkbox/tables, **UI-09** = Shell/Projects/Settings/About,
 **UI-10** = CLI↔GUI parity, **UI-11** = Source Discovery, **UI-12** = deep
 visual audit system (meta). UI-01..05 match the earlier mapping. My Oct-15
 morning matrix had UI-08/09/12 misnumbered — corrected here.
+
+## T6 narrow-window lane (980×640, Nov-25)
+
+The narrow-window lane (#161) drives the packaged automation build at the
+minimum supported window and measures vertical reachability, which earlier
+lanes (horizontal-edge probes only) could not see. Evidence:
+`docs/design/evidence/NARROW_WINDOW_EVIDENCE.md` — 100/100 probes after the
+fixes, §11A-F 5/5, both themes, 17 surfaces.
+
+| ID | Item | Status | Evidence / remaining |
+|----|------|--------|----------------------|
+| NW-01 | Sidebar bottom unreachable at min height | **VERIFIED FIXED** | `.app-sidebar` overflowed the 608px content area with `overflow:visible` (content ~822px): Settings/About links painted past the window edge, no scroll affordance. Fix: `overflow-y: auto` (r1-react.css). Lane before: 15 surfaces flagged `shell.about-link`; after: 0 |
+| NW-02 | Workspace footer («На главную») unreachable at min height | **VERIFIED FIXED** | unstyled `.ws-page` wrapper + `minmax(530px,…)` editor floor → page ~1105px in a 489px visible box, clipped by `route-content{overflow:hidden}` with no scroll container on the chain. Fix: `ws-page` scrolls (`flex:1; min-height:0; overflow-y:auto`, r1-react.css). Lane before: workspace + dark-workspace flagged; after: 0 |
+| NW-03 | Horizontal overflow / sibling overlaps / panel containment at 980×640 | **VERIFIED CLEAN** | zero findings across 17 surfaces, both themes (100/100 probes incl. dark workspace/settings); screenshots in `docs/screenshots/narrow-window/` |

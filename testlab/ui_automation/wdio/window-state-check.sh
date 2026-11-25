@@ -61,11 +61,24 @@ PY
 # P0 (2026-10-01): ноль активаций — restore_prev удалён (System Events
 # set frontmost = форма передёргивания). Форки wry/tao дают чистый спавн.
 launch_normal() { # → pid
-  nohup "$BIN" >/tmp/wcheck-normal.log 2>&1 & echo $!
+  # WCHECK_HOME (P0 изоляция, codex review #174): обычные запуски §11A
+  # персистят фрейм через tauri-plugin-window-state в app_config_dir —
+  # RIMLOC_DATA_DIR его НЕ покрывает. Редирект HOME на одноразовую
+  # директорию спасает сохранённую геометрию владельца.
+  if [ -n "${WCHECK_HOME:-}" ]; then
+    nohup env HOME="$WCHECK_HOME" "$BIN" >/tmp/wcheck-normal.log 2>&1 & echo $!
+  else
+    nohup "$BIN" >/tmp/wcheck-normal.log 2>&1 & echo $!
+  fi
   sleep 3.5
 }
-launch_automation() { # → pid (КАНОНСКИЙ путь: wrapper + эфемерный фрейм)
-  bash "$(dirname "$0")/spawn-wrapper.sh" >/tmp/wcheck-auto.log 2>&1 & echo $!
+launch_automation() { # → pid (КАНОНСКИЙ путь: wrapper + эфемерный фрейм);
+  # BIN пробрасывается wrapper'у — проверка гоняет ТОТ артефакт, что и §11A
+  if [ -n "${WCHECK_HOME:-}" ]; then
+    env HOME="$WCHECK_HOME" bash "$(dirname "$0")/spawn-wrapper.sh" "$BIN" >/tmp/wcheck-auto.log 2>&1 & echo $!
+  else
+    bash "$(dirname "$0")/spawn-wrapper.sh" "$BIN" >/tmp/wcheck-auto.log 2>&1 & echo $!
+  fi
   sleep 4.5
 }
 move_window() { # pid x y — по ИМЕНИ главного окна (window 1 гонкается)
@@ -78,7 +91,7 @@ quit_app() { # graceful: AX-крестик → окно закрыто → tauri
   kill "$1" 2>/dev/null; sleep 0.8
 }
 
-pkill -f "target/debug/rimloc-gui" 2>/dev/null; sleep 1
+pkill -f "$BIN" 2>/dev/null; sleep 1
 
 # --- §11A: user frame persists across normal launches ---
 P=$(launch_normal); sleep 1
@@ -101,7 +114,7 @@ quit_app "$P"
 PREV_APP=$(osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true' 2>/dev/null)
 P=$(launch_automation)
 sleep 0.5
-P=$(pgrep -f "target/debug/rimloc-gui" | tail -1)  # бинарь под wrapper'ом
+P=$(pgrep -f "$BIN" | tail -1)  # бинарь под wrapper'ом
 SCREENS=$($WINFRAME "$P" 2>/dev/null | grep -oE 'screens=\[.*\]' | cut -d'[' -f2 | tr -d ']')
 AF=$(main_frame_of "$P"); note "automation frame: $AF (screens: $SCREENS)"
 inside_visible "$AF" "$SCREENS"; check "§11D inside visible frame" $? "$AF"

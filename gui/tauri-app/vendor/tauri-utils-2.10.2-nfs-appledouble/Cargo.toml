@@ -13,9 +13,9 @@
 edition = "2024"
 rust-version = "1.90"
 name = "tauri-utils"
-version = "2.10.1"
+version = "2.10.2"
 authors = ["Tauri Programme within The Commons Conservancy"]
-build = false
+build = "build.rs"
 exclude = [
     "CHANGELOG.md",
     "/target",
@@ -217,7 +217,7 @@ version = "3.5"
 version = "3.15.0"
 
 [target.'cfg(target_os = "macos")'.dependencies.swift-rs]
-version = "1.0.8"
+version = "1.0.9"
 features = ["build"]
 optional = true
 
