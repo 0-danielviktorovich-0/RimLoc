@@ -498,13 +498,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
       - name: Install Linux GUI dependencies
         run: |
-          SUDO_ASKPASS="$__hermes_sudo_dir/a" sudo "${__hermes_sudo_o[@]}" apt-get update
-          SUDO_ASKPASS="$__hermes_sudo_dir/a" sudo "${__hermes_sudo_o[@]}" apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2 (pinned 2026-09-27)
         with:
           workspaces: gui/tauri-app/src-tauri
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6 (pinned 2026-09-27)
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6 (pinned 2026-09-27)
         with:
           node-version: 24
           cache: npm
@@ -515,30 +515,88 @@ jobs:
         run: |
           npx --yes @tauri-apps/cli@2 build --bundles deb,appimage
         working-directory: gui/tauri-app/src-tauri
+      # Issue #164: pin the exact bytes behind the smoke run (deb + AppImage).
+      - name: Linux ARM64 artifact checksums (sha256)
+        run: |
+          cd target/release/bundle
+          {
+            sha256sum deb/*.deb
+            sha256sum appimage/*.AppImage
+          } | tee sha256-linux-arm64.txt
+      # Startup smoke per #164, mirroring the amd64 lane: start under Xvfb →
+      # alive 15s → clean logs → graceful SIGTERM (true wait status). Track the
+      # launched PID, never a filename pattern. Native aarch64 runner — the
+      # same bytes ARM Linux users install, no emulation involved.
       - name: Linux ARM64 startup smoke (virtual display)
         run: |
-          SUDO_ASKPASS="$__hermes_sudo_dir/a" sudo "${__hermes_sudo_o[@]}" apt-get install -y xvfb
+          sudo apt-get install -y xvfb
           APPIMAGE=$(find target/release/bundle/appimage -name "*.AppImage" | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "STARTUP_FAIL: no AppImage found after build"
+            exit 1
+          fi
           chmod +x "$APPIMAGE"
           RIMLOC_DATA_DIR=$(mktemp -d)
           export RIMLOC_DATA_DIR
-          xvfb-run -a "$APPIMAGE" &
-          WRAPPER_PID=$!
+          LOG=target/release/bundle/smoke-linux-arm64.log
+          # Run Xvfb directly (no xvfb-run wrapper) so $! IS the app PID and
+          # `wait` can capture its true termination status. AppImages run with
+          # --appimage-extract-and-run: no FUSE needed and AppRun exec()s the
+          # binary in the same PID. A crash after SIGTERM (e.g. exit 42) must
+          # NOT count as graceful — only 0 (clean exit) or 143 (our SIGTERM).
+          Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          sleep 2
+          "$APPIMAGE" --appimage-extract-and-run >"$LOG" 2>&1 &
+          APP_PID=$!
           sleep 15
-          APP_PID=$(pgrep -f "rimloc.*AppImage" | grep -v $WRAPPER_PID | head -1)
-          if [ -n "$APP_PID" ] && kill -0 $APP_PID 2>/dev/null; then
-            echo "STARTUP_PASS: GUI process $APP_PID alive after 15s on virtual display (aarch64 native)"
-            kill $APP_PID $WRAPPER_PID 2>/dev/null || true
-          elif kill -0 $WRAPPER_PID 2>/dev/null; then
-            echo "STARTUP_FAIL: wrapper alive but no GUI process found"
-            kill $WRAPPER_PID 2>/dev/null || true
-            exit 1
+          if kill -0 "$APP_PID" 2>/dev/null; then
+            echo "STARTUP_PASS: GUI process alive after 15s on virtual display (pid $APP_PID, aarch64 native)"
+            kill -TERM "$APP_PID" 2>/dev/null || true
+            APP_RC=""
+            for _ in $(seq 1 10); do
+              if ! kill -0 "$APP_PID" 2>/dev/null; then break; fi
+              sleep 1
+            done
+            # Capture the true termination status: `wait` under `set -e` needs
+            # the guarded pattern, but the guard must not mask the status.
+            wait "$APP_PID" && APP_RC=$? || APP_RC=$?
+            if [ "$APP_RC" -eq 0 ] || [ "$APP_RC" -eq 143 ]; then
+              echo "STARTUP_PASS: app exited gracefully on SIGTERM (wait status $APP_RC)"
+            else
+              echo "STARTUP_FAIL: app terminated with unexpected exit status $APP_RC (crash or nonzero exit on SIGTERM)"
+              kill -9 "$XVFB_PID" 2>/dev/null || true
+              exit 1
+            fi
+            # Clean logs: startup must not panic / lose shared libraries / the display.
+            if grep -Eq "panicked at|RUST_BACKTRACE|error while loading shared libraries|cannot open display" "$LOG"; then
+              echo "STARTUP_FAIL: crash markers in app log:"
+              cat "$LOG"
+              exit 1
+            fi
+            echo "STARTUP_PASS: app log clean:"
+            cat "$LOG"
           else
-            echo "STARTUP_FAIL: both wrapper and GUI exited"
+            echo "STARTUP_FAIL: app exited before the 15s alive check"
+            cat "$LOG" || true
+            kill -9 "$XVFB_PID" 2>/dev/null || true
             exit 1
           fi
+          kill -9 "$XVFB_PID" 2>/dev/null || true
+      # Issue #164: evidence logs ship as artifacts even when the smoke is red.
+      - name: Upload smoke evidence (logs + checksums)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v5 (pinned 2026-10-19)
+        with:
+          name: rimloc-linux-arm64-smoke-evidence
+          path: |
+            target/release/bundle/smoke-linux-arm64.log
+            target/release/bundle/sha256-linux-arm64.txt
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload bundle artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v5 (pinned 2026-10-19)
         with:
           name: rimloc-linux-bundle-arm64
           if-no-files-found: error
