@@ -70,7 +70,15 @@ install_helper_shim axquit "$REPO/testlab/ui_automation/bin/axquit.py"
 # --- 3. §11A-F window-state regression --------------------------------------
 WCHECK_RC=0
 if [ "${T6_SKIP_WINDOW_CHECK:-0}" != "1" ]; then
-  note "running window-state-check.sh §11A-F"
+  # P0 isolation (AGENTS.md test-profile rule, codex review #174): §11's
+  # NORMAL launches persist window geometry via tauri-plugin-window-state
+  # into app_config_dir, which RIMLOC_DATA_DIR does NOT cover — redirect
+  # HOME to a disposable dir for every §11 launch so the owner's saved
+  # frame is never overwritten.
+  WCHECK_HOME="$(mktemp -d "$WORK/home.XXXXXX")"
+  export WCHECK_HOME
+  export RIMLOC_DATA_DIR="$WORK/data"   # managed-root isolation for §11 too
+  note "running window-state-check.sh §11A-F (isolated HOME: $WCHECK_HOME)"
   bash "$REPO/testlab/ui_automation/wdio/window-state-check.sh" "$BIN" \
     2>&1 | tee "$EVIDENCE/window-state-check.log" >/dev/null
   WCHECK_RC=${PIPESTATUS[0]}
@@ -85,9 +93,16 @@ export T6_EVIDENCE="$EVIDENCE"
 export T6_PY="$PY"
 export T6_PORT="$PORT"
 export T6_DATA_DIR="$WORK/data"   # isolated projects universe (owner §4)
+# The wrapper resolves from THIS checkout (codex review #174) — never a
+# hard-coded author-worktree path; the conf validates the absolute path.
+export T6_SPAWN_WRAPPER="$REPO/testlab/ui_automation/wdio/spawn-wrapper-t6.sh"
 note "running WDIO lane (port $PORT)"
 cd "$REPO/gui/tauri-app/frontend-v2"
-npx wdio run e2e/wdio-spike/narrow-window.conf.ts 2>&1 | tee "$EVIDENCE/wdio-run.log" | grep -E '√|×|FAIL|SUMMARY|spec' || true
+# Capture WDIO's status BEFORE the optional log filter can mask it
+# (codex review #174): no `|| true` before reading PIPESTATUS — an early
+# WDIO crash must fail the lane, not print zero. The filter's own rc is
+# irrelevant by design (nothing to show = empty summary, not a failure).
+npx wdio run e2e/wdio-spike/narrow-window.conf.ts 2>&1 | tee "$EVIDENCE/wdio-run.log" | grep -E '√|×|FAIL|SUMMARY|spec' > "$EVIDENCE/wdio-summary.txt"
 WDIO_RC=${PIPESTATUS[0]}
 cd "$REPO"
 

@@ -7,6 +7,16 @@ import type { Options } from '@wdio/types'
 // activations; every check is a measured DOM fact (getBoundingClientRect,
 // precedent react-geometry UI-04 25/25) plus native CGWindowList captures.
 // The report lands in $T6_EVIDENCE/narrow-window-report.json.
+// The spawn wrapper resolves from the CURRENT checkout (codex review #174):
+// narrow-window-run.sh exports T6_SPAWN_WRAPPER from its own $REPO, so the
+// documented one-command reproduction works on any machine. Same contract as
+// a3-broker.conf.ts (A3_WRAPPER): no machine-specific defaults in-tree.
+const wrapper = process.env.T6_SPAWN_WRAPPER
+if (!wrapper || !wrapper.startsWith('/')) {
+  throw new Error(
+    'T6_SPAWN_WRAPPER must name the spawn wrapper (absolute path); run the lane via narrow-window-run.sh, which exports it from the checkout',
+  )
+}
 export const config: Options.Testrunner = {
   runner: 'local',
   specs: ['./narrow-window.spec.ts'],
@@ -15,8 +25,7 @@ export const config: Options.Testrunner = {
     {
       browserName: 'tauri',
       'tauri:options': {
-        application:
-          '/Users/danielviktorovich/Developing/_rimloc-worktrees/t6-window/testlab/ui_automation/wdio/spawn-wrapper-t6.sh',
+        application: wrapper,
       },
     },
   ],
