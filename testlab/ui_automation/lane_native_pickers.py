@@ -39,10 +39,11 @@ Run (worktree root, .venv-testlab python — pyobjc lives there):
 
     .venv-testlab/bin/python -m testlab.ui_automation.lane_native_pickers
 
-BIN override: PICKERS_BIN=... ; window frame: PICKERS_FRAME="x,y,WxH".
+Window frame override: PICKERS_FRAME="x,y,WxH" (strict integers).
 Evidence: target/logs/pickers-<ts>/ (report.json, per-round panel trees
-and PNGs, app stdout/stderr). Exit 0 iff every round passed and the
-run disturbed nobody (frontmost unchanged or honestly restored).
+and PNGs, app stdout/stderr). Exit 0 only for a fully-verified run:
+exit 2 = degraded rounds remain (remedy in report.json), exit 1 = real
+failures or focus interference.
 """
 
 from __future__ import annotations
@@ -733,27 +734,27 @@ class Lane:
 
 
 def main() -> int:
-    bin_path = os.environ.get(
-        'PICKERS_BIN',
-        str(Path('target/release/bundle/macos/RimLoc GUI.app'
-                 '/Contents/MacOS/rimloc-gui')))
-    # The app is spawned with cwd=<evidence dir>, so a relative PICKERS_BIN
-    # would die with FileNotFoundError — resolve against the launch cwd now.
-    bin_path = str(Path(bin_path).resolve())
-    # CodeQL taint gate: the env-provided binary must be EXACTLY the RimLoc
-    # GUI automation binary — nothing else is ever spawned by this lane.
-    if Path(bin_path).name != 'rimloc-gui' or not Path(bin_path).is_file():
-        print(f'FATAL: PICKERS_BIN must point at the automation binary '
-              f'named "rimloc-gui" (got {bin_path!r}).\n'
-              'Build it with testlab/build/build-automation-react.sh.',
+    # The spawned binary is a fixed constant relative to the worktree root
+    # (CodeQL path-injection: no env/operator-provided path ever reaches a
+    # filesystem API here). Overrides happen by building into the standard
+    # location via testlab/build/build-automation-react.sh.
+    bin_path = str((Path.cwd() / DEFAULT_BIN).resolve())
+    if not Path(bin_path).is_file():
+        print(f'FATAL: automation artifact missing: {bin_path}\n'
+              'Run testlab/build/build-automation-react.sh first.',
               file=sys.stderr)
         return 2
     frame = os.environ.get('PICKERS_FRAME', '348,70,980x640')
-    # CodeQL taint gate: the frame is a strict "x,y,WxH" triple.
-    import re
-    if not re.fullmatch(r'\d+,\d+,\d+x\d+', frame):
-        print(f'FATAL: PICKERS_FRAME must match "x,y,WxH" (got {frame!r})',
-              file=sys.stderr)
+    # CodeQL ReDoS gate: strict split-based parsing, no regex on
+    # operator-provided data. The frame must be "x,y,WxH" integers.
+    try:
+        x_s, y_s, wh = frame.split(',')
+        x, y, w, h = int(x_s), int(y_s), *(int(v) for v in wh.split('x'))
+        if min(x, y, w, h) < 0:
+            raise ValueError('negative frame component')
+    except (ValueError, TypeError):
+        print(f'FATAL: PICKERS_FRAME must be "x,y,WxH" integers '
+              f'(got {frame!r})', file=sys.stderr)
         return 2
     lane = Lane(bin_path, frame)
     rep = lane.run()
