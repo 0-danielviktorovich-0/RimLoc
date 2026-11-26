@@ -659,6 +659,17 @@ def wait_ready(pid: int, timeout: float = 120.0) -> list[str]:
 
 # ------------------------------------------------------- defaults memory
 
+def _safe_defaults_value(value: str) -> str:
+    """Guard the values that round-trip through `defaults` (CodeQL:
+    uncontrolled data must not reach a command line). A panel location is
+    always an absolute path without control characters; anything else is
+    refused before it can flow back into a subprocess argv."""
+    v = str(value)
+    if not v.startswith('/') or any(c in v for c in '\x00\n\r;|&$`'):
+        raise ValueError(f'refusing unsafe defaults value: {v!r}')
+    return v
+
+
 def defaults_read(key: str = NAV_LAST_ROOT_KEY) -> str | None:
     r = subprocess.run(['defaults', 'read', DEFAULTS_DOMAIN, key],
                        capture_output=True, text=True)
@@ -666,6 +677,7 @@ def defaults_read(key: str = NAV_LAST_ROOT_KEY) -> str | None:
 
 
 def defaults_write(key: str, value: str) -> None:
+    value = _safe_defaults_value(value)
     subprocess.run(['defaults', 'write', DEFAULTS_DOMAIN, key,
                     '-string', value], check=True)
 

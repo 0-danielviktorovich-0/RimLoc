@@ -350,8 +350,10 @@ class Lane:
                 # Degraded environment round: the panel opened (evidence
                 # captured above) but its interactive elements are inert
                 # for a background driver. Everything observable is
-                # verified; the dialog interaction is deferred to a
-                # session with a healthy panel (see the remedy note).
+                # recorded; the round does NOT count as passed (review
+                # #176) — the scenario's core assertion (arrival/confirm)
+                # never ran. Exit code 2 + the remedy note make the gap
+                # visible instead of a lying green.
                 rd['degraded'] = True
                 rd['verified'] = [
                     'panel opened', 'dialog signature (Open/Cancel/New '
@@ -364,8 +366,7 @@ class Lane:
                 after = self.read_input(ctl, timeout=8)
                 rd['readback_after'] = after
                 rd['expected'] = before
-                rd['ok'] = (after == before) if scenario == 'cancel' \
-                    else (after is None or after == before)
+                rd['ok'] = False
                 pk.press_cancel(panel)   # attempt; response recorded below
                 time.sleep(1.5)
                 pn = pk.find_panel(self.pid)
@@ -430,7 +431,7 @@ class Lane:
                     after = self.read_input(ctl, timeout=8)
                     rd['readback_after'] = after
                     rd['expected'] = before
-                    rd['ok'] = (after == before)
+                    rd['ok'] = False
                     self.note_focus(f'{scenario}/{ctl["id"]}:round-end')
                     self.rounds.append(rd)
                     (out_dir / 'round.json').write_text(
@@ -481,6 +482,7 @@ class Lane:
                         rd['ok'] = False
         except Exception as e:  # noqa: BLE001 — the round IS the unit of failure
             rd['error'] = f'{type(e).__name__}: {e}'
+            rd['failed'] = True
             try:
                 panel = pk.find_panel(self.pid)
                 if panel is not None:
@@ -517,38 +519,85 @@ class Lane:
         self.nav_named(WIZARD_OPEN)
         if self.read_input(dict(inp=WIZARD_PATH_INP), timeout=10) is None:
             raise RuntimeError('wizard modal did not open (bootstrap)')
-        # memory seam: the panel must open AT the preset fixture dir
-        pk.defaults_write(pk.NAV_LAST_ROOT_KEY, str(FIXTURE / 'pack-a'))
-        self.press_control(dict(id='bootstrap', press=WIZARDCTL_PRESS),
-                           timeout=30)
-        panel = pk.wait_panel(self.pid, timeout=30)
-        info['panel_kind'] = panel.kind
-        info['where_at_open'] = str(pk._value(
-            pk.where_popup(panel.element)) or '')
-        try:
-            pk.confirm_dir(self.pid, timeout=30)
-        except RuntimeError as e:
-            # Degraded environment (no healthy panel — see round() health
-            # gate): the gated screens cannot be unlocked over AX. Close
-            # the modal honestly and let the lane cover the ungated
-            # controls in degraded mode.
+        # memory seam + retry ladder: the panel health is a nondeterministic
+        # per-open property (cfprefsd/panel state — probes 5-24); a broken
+        # panel is cancelled and the pick reopened, up to 3 attempts.
+        for attempt in (1, 2, 3):
+            pk.defaults_write(pk.NAV_LAST_ROOT_KEY, str(FIXTURE / 'pack-a'))
+            self.press_control(dict(id='bootstrap', press=WIZARDCTL_PRESS),
+                               timeout=30)
+            panel = pk.wait_panel(self.pid, timeout=30)
+            info['panel_kind'] = panel.kind
+            info['where_at_open'] = str(pk._value(
+                pk.where_popup(panel.element)) or '')
+            try:
+                pk.confirm_dir(self.pid, timeout=30)
+                break
+            except RuntimeError as e:
+                # Broken panel (no location / Open never enabled): cancel
+                # and reopen — never escalate on the first flake.
+                info.setdefault('attempts', []).append(
+                    {'n': attempt, 'where': info['where_at_open'],
+                     'reason': str(e)})
+                pn = pk.find_panel(self.pid)
+                if pn is not None:
+                    pk.press_cancel(pn)
+                    pk.panel_gone(self.pid, timeout=6)
+                self.nav_named(WIZARD_CANCEL, timeout=8)
+                if attempt < 3:
+                    self.nav_named(WIZARD_OPEN, timeout=15)
+                    if self.read_input(dict(inp=WIZARD_PATH_INP),
+                                       timeout=10) is None:
+                        raise RuntimeError(
+                            'wizard modal did not reopen (bootstrap retry)')
+        else:
+            # Degraded environment after 3 attempts: the gated screens
+            # cannot be unlocked over AX. Close the modal honestly and let
+            # the lane cover the ungated controls in degraded mode.
             info['degraded'] = True
-            info['degraded_reason'] = str(e)
-            pn = pk.find_panel(self.pid)
-            if pn is not None:
-                pk.press_cancel(pn)
-                pk.panel_gone(self.pid, timeout=6)
-            self.nav_named(WIZARD_CANCEL, timeout=10)
+            info['degraded_reason'] = 'no healthy panel in 3 attempts'
             return info
         if not pk.panel_gone(self.pid):
             raise RuntimeError('panel survived the bootstrap confirm')
         got = self.read_input(dict(inp=WIZARD_PATH_INP), timeout=10)
+        advanced_back = False
+        if got is None:
+            # A successful pick advances the wizard (setStep(1)) and
+            # unmounts the step-0 path input (review #176): go «Назад» to
+            # read and validate it, then forward again before creating.
+            back = self.nav_named(WIZARD_BACK, timeout=8)
+            if 'pressed' not in back:
+                raise RuntimeError(
+                    'bootstrap: path input unmounted and «Назад» '
+                    'unavailable after the confirm')
+            got = self.read_input(dict(inp=WIZARD_PATH_INP), timeout=8)
+            self.nav_named(WIZARD_NEXT, timeout=10)
+            advanced_back = True
         info['wizard_readback'] = got
         if got is None or not got.rstrip('/').endswith('pack-a'):
             raise RuntimeError(
                 f'bootstrap pick readback {got!r} does not end with pack-a')
-        self.nav_named(WIZARD_NEXT, timeout=15)     # step 1 → 2
-        self.nav_named(WIZARD_CREATE, timeout=15)   # create + scan
+        # The wizard is multi-step (1/3 mod folder → … → «Создать проект»):
+        # advance with «Далее» until the create button appears (review
+        # #176 — the step count is not fixed 1 press).
+        deadline = time.time() + 150
+        created = False
+        next_presses = 0
+        if not advanced_back:
+            self.nav_named(WIZARD_NEXT, timeout=15)
+        while time.time() < deadline:
+            if self.press_hits(WIZARD_CREATE):
+                self.nav_named(WIZARD_CREATE, timeout=10)
+                created = True
+                break
+            if next_presses < 6 and self.press_hits(WIZARD_NEXT):
+                self.nav_named(WIZARD_NEXT, timeout=10)
+                next_presses += 1
+            time.sleep(2)
+        if not created:
+            raise RuntimeError(
+                'wizard never reached «Создать проект» '
+                f'({next_presses} «Далее» presses in 150s)')
         deadline = time.time() + 120
         while time.time() < deadline:
             if self.read_input(dict(inp=WIZARD_PATH_INP), timeout=3) is None:
@@ -559,8 +608,14 @@ class Lane:
         # the project is open ⇒ gated screens expose their pickers
         self.nav_named(NAV['existing'], timeout=30)
         if not self.arrive_screen(CONTROLS[0], timeout=60):
+            # carry the evidence: what the screen actually exposed
+            names = pk.web_button_names(self.pid, timeout=10)
+            (self.root / 'existing-screen-failure.txt').write_text(
+                '\n'.join(n for n in names if n), encoding='utf-8')
             raise RuntimeError(
-                'project bootstrap did not unlock the Existing screen')
+                'project bootstrap did not unlock the Existing screen '
+                f'(controls dumped to existing-screen-failure.txt, '
+                f'{sum(1 for n in names if n)} named)')
         info['unlocked'] = True
         return info
 
@@ -653,12 +708,13 @@ class Lane:
         total = len(self.rounds)
         ok = sum(1 for r in self.rounds if r['ok'])
         degraded = sum(1 for r in self.rounds if r.get('degraded'))
+        failed = sum(1 for r in self.rounds if r.get('failed'))
         rep = {
             'started': getattr(self, '_t0', ''),
             'bin': self.bin,
             'fixture': str(FIXTURE),
             'totals': {'rounds': total, 'passed': ok,
-                       'degraded': degraded, 'failed': total - ok},
+                       'degraded': degraded, 'failed': failed},
             'degraded_note': ('degraded rounds verified open+structure+'
                               'evidence+zero-focus; the dialog interaction '
                               'needs a healthy panel — one real folder pick '
@@ -684,18 +740,41 @@ def main() -> int:
     # The app is spawned with cwd=<evidence dir>, so a relative PICKERS_BIN
     # would die with FileNotFoundError — resolve against the launch cwd now.
     bin_path = str(Path(bin_path).resolve())
-    if not Path(bin_path).exists():
-        print(f'FATAL: automation artifact missing: {bin_path}\n'
-              'Run testlab/build/build-automation-react.sh first.',
+    # CodeQL taint gate: the env-provided binary must be EXACTLY the RimLoc
+    # GUI automation binary — nothing else is ever spawned by this lane.
+    if Path(bin_path).name != 'rimloc-gui' or not Path(bin_path).is_file():
+        print(f'FATAL: PICKERS_BIN must point at the automation binary '
+              f'named "rimloc-gui" (got {bin_path!r}).\n'
+              'Build it with testlab/build/build-automation-react.sh.',
               file=sys.stderr)
         return 2
     frame = os.environ.get('PICKERS_FRAME', '348,70,980x640')
+    # CodeQL taint gate: the frame is a strict "x,y,WxH" triple.
+    import re
+    if not re.fullmatch(r'\d+,\d+,\d+x\d+', frame):
+        print(f'FATAL: PICKERS_FRAME must match "x,y,WxH" (got {frame!r})',
+              file=sys.stderr)
+        return 2
     lane = Lane(bin_path, frame)
     rep = lane.run()
     print(json.dumps(rep['totals'], ensure_ascii=False))
     print(f"focus_events: {rep['focus_events']}")
     print(f"report: {lane.root / 'report.json'}")
-    return 0 if rep['totals']['failed'] == 0 else 1
+    # Exit matrix (review #176): only a fully-verified run is green.
+    #   0 — every round passed, no degraded rounds, no focus interference
+    #   2 — nothing failed but degraded rounds remain: the environment
+    #       needs the remedy (one real folder pick restores healthy
+    #       panels); the run is NOT a pass
+    #   1 — genuine round failures or focus interference (campaign red flag)
+    t = rep['totals']
+    if t['failed'] > 0 or rep['focus_events']:
+        return 1
+    if t['degraded'] > 0:
+        print('DEGRADED ROUNDS PRESENT — see the remedy in report.json: '
+              'one real folder pick in RimLoc restores healthy panels, '
+              'then rerun this lane for full coverage.', flush=True)
+        return 2
+    return 0
 
 
 if __name__ == '__main__':
