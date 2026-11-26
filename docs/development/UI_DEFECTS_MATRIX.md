@@ -128,3 +128,20 @@ Lane: `bash`-free, one command — `.venv-testlab/bin/python -m testlab.ui_autom
 | PK-03 | The panel's initial location follows NSOSPLastRootDirectory (security-scoped bookmark), not NSNavLastRootDirectory | **VERIFIED** | Deleting the bookmark degraded every panel to a location-less state (empty Where:, Open permanently disabled); NSNav string presets are honoured only while a valid bookmark/health state exists. `defaults` fabrications ( NSURL bookmark blob) are not accepted — the bookmark must come from a real pick. Remedy for CI sessions: one real folder pick in RimLoc restores healthy panels, then rerun the lane |
 | PK-04 | Per-control panel arrival + cancel-safety are AX-verifiable | **VERIFIED (lane green)** | path scenario: Where: == the control's own fixture target (`pack-a`/`pack-b`); memory: the remembered root (`po-pack`); «Отмена» closes located panels (`cancel=panel-gone`) and the web readback stays byte-identical; zero focus events across all rounds |
 | PK-05 | File-row selection + Open confirm over AX | **DEFERRED → T8 CUA / owner UAT** | Requires an interactive session on this macOS build (PK-01+PK-02); the lane records these rounds honestly as degraded with the remedy note |
+
+## T8 prep probes (Nov-26): background path entry is proven — probes 25–26
+
+Question: can the app's path inputs be filled WITHOUT the native panel and
+WITHOUT stealing the owner's focus (the T8 interactive residue shrinks to
+the panel confirm itself)?
+
+| ID | Finding | Verdict | Detail |
+|---|---|---|---|
+| PK-06 | Plain AXSetValue does not change React controlled inputs | **PLATFORM LIMITATION (React)** | `AXUIElementSetAttributeValue(el,'AXValue',…)` returns err=0 but the DOM value stays empty (probe 25): a React controlled input ignores programmatic value writes that do not arrive as input events. Reading AXValue works fine |
+| PK-07 | Every picker control has a manually-typeable path input next to the button | **VERIFIED (source)** | `ex.dir`/`ex.poOut` (Existing.tsx), `be.outdir` (BuildExport.tsx), two inputs (Compare.tsx), one (Diagnostics.tsx), `wizard.path-input` («можно ввести вручную», NewProjectWizard.tsx) — all editable `<input>` with `onChange`, none readonly. A human (or any DOM-level driver) can type the path; the picker button is a convenience |
+| PK-08 | Embedded WDIO fills React inputs and advances the wizard fully in background | **VERIFIED (probe 26)** | W3C WebDriver against `tauri-plugin-wdio-webdriver` (TCP 4445, `RIMLOC_AUTOMATION=1`): session → click `wizard.open` → `elementSendKeys` into `wizard.path-input` → value round-trips (React onChange fired) → «Далее» advances (step-0 input unmounts) → «Назад» re-mounts the input holding the typed path. Frontmost watchdog: 61 samples, **zero** rimloc-gui frontmost events for the whole session (zero-activation vendor forks hold on the React build) |
+| PK-09 | Remaining interactive residue for T8 | **SCOPED DOWN** | Only the NSOpenPanel confirm (row selection + «Открыть») per control — path entry itself is background-capable (PK-07/08); the T8 UAT session is ~10 minutes of panel confirms, everything else stays automated |
+
+Probe scripts: `target/logs/probe-panel25.py`, `probe-panel26.py` (evidence
+logs alongside). WDIO channel precedent: `docs/development/testing/WDIO_EMBEDDED_SPIKE.md`
+(embedded server, zero-activation forks, 55-min soak PASS).
