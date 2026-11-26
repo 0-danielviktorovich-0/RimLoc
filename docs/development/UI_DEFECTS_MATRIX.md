@@ -113,3 +113,18 @@ fixes, §11A-F 5/5, both themes, 17 surfaces.
 | NW-01 | Sidebar bottom unreachable at min height | **VERIFIED FIXED** | `.app-sidebar` overflowed the 608px content area with `overflow:visible` (content ~822px): Settings/About links painted past the window edge, no scroll affordance. Fix: `overflow-y: auto` (r1-react.css). Lane before: 15 surfaces flagged `shell.about-link`; after: 0 |
 | NW-02 | Workspace footer («На главную») unreachable at min height | **VERIFIED FIXED** | unstyled `.ws-page` wrapper + `minmax(530px,…)` editor floor → page ~1105px in a 489px visible box, clipped by `route-content{overflow:hidden}` with no scroll container on the chain. Fix: `ws-page` scrolls (`flex:1; min-height:0; overflow-y:auto`, r1-react.css). Lane before: workspace + dark-workspace flagged; after: 0 |
 | NW-03 | Horizontal overflow / sibling overlaps / panel containment at 980×640 | **VERIFIED CLEAN** | zero findings across 17 surfaces, both themes (100/100 probes incl. dark workspace/settings); screenshots in `docs/screenshots/narrow-window/` |
+
+## T7 native-picker lane (pure-AX, Nov-25/26)
+
+Lane: `bash`-free, one command — `.venv-testlab/bin/python -m testlab.ui_automation.lane_native_pickers`
+(worktree root; `.venv-testlab` = pyobjc venv). Evidence: `target/logs/pickers-<ts>/`
+(report.json, per-round panel trees + PNGs, app stdout/stderr). Latest full run:
+`pickers-20261126-091226` — 9 rounds, 9 passed, 0 failed, zero focus events.
+
+| ID | Finding | Verdict | Detail |
+|---|---|---|---|
+| PK-01 | NSOpenPanel browser rows are not exposed via AX | **PLATFORM LIMITATION (macOS 27.2)** | The panel's NSBrowser columns carry zero AX children (verified on live dumps: `panel4-tree.json` — 203 nodes, browser subtree empty; visually the rows render — screenshot `p20-win1521.png`). Row-based descent is impossible for any AT tooling, not just the lane |
+| PK-02 | Panel buttons ignore AXPress in background sessions | **PLATFORM LIMITATION** | Open/Cancel AXPress return err=0 but do nothing while the app is not frontmost; programmatic activation is refused (NSRunningApplication.activate/WithFlags, osascript `activate` — all no-op for a Popen-spawned instance). One live success (probe 6-B) correlates with the app being frontmost |
+| PK-03 | The panel's initial location follows NSOSPLastRootDirectory (security-scoped bookmark), not NSNavLastRootDirectory | **VERIFIED** | Deleting the bookmark degraded every panel to a location-less state (empty Where:, Open permanently disabled); NSNav string presets are honoured only while a valid bookmark/health state exists. `defaults` fabrications ( NSURL bookmark blob) are not accepted — the bookmark must come from a real pick. Remedy for CI sessions: one real folder pick in RimLoc restores healthy panels, then rerun the lane |
+| PK-04 | Per-control panel arrival + cancel-safety are AX-verifiable | **VERIFIED (lane green)** | path scenario: Where: == the control's own fixture target (`pack-a`/`pack-b`); memory: the remembered root (`po-pack`); «Отмена» closes located panels (`cancel=panel-gone`) and the web readback stays byte-identical; zero focus events across all rounds |
+| PK-05 | File-row selection + Open confirm over AX | **DEFERRED → T8 CUA / owner UAT** | Requires an interactive session on this macOS build (PK-01+PK-02); the lane records these rounds honestly as degraded with the remedy note |
